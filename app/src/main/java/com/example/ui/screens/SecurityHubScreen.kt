@@ -182,124 +182,34 @@ fun SecurityHubScreen(
 
                     Spacer(modifier = Modifier.height(14.dp))
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    Button(
+                        onClick = onLogout,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("logout_button"),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFFFF5252).copy(alpha = 0.15f),
+                            contentColor = Color(0xFFFF5252)
+                        )
                     ) {
-                        OutlinedButton(
-                            onClick = onOpenAdminConsole,
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(10.dp),
-                            border = BorderStroke(1.dp, SleekBorder)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.AdminPanelSettings,
-                                contentDescription = null,
-                                tint = neonColors.neonAccent,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "Admin",
-                                color = Color.White,
-                                fontSize = 12.sp
-                            )
-                        }
-
-                        Button(
-                            onClick = onLogout,
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(10.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFFFF5252).copy(alpha = 0.2f),
-                                contentColor = Color(0xFFFF5252)
-                            )
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.ExitToApp,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "Déconnexion",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 12.sp
-                            )
-                        }
+                        Icon(
+                            imageVector = Icons.Default.ExitToApp,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Déconnexion",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp
+                        )
                     }
                 }
             }
 
             Spacer(modifier = Modifier.height(18.dp))
         }
-
-        // SECTION: ADMIN CONSOLE SHORTCUT
-        Text(
-            text = "ADMINISTRATION SYSTÈME",
-            style = MaterialTheme.typography.labelSmall,
-            color = neonColors.neonAccent,
-            fontWeight = FontWeight.Bold,
-            fontSize = 11.sp
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
-                .clickable { onOpenAdminConsole() },
-            colors = CardDefaults.cardColors(containerColor = SleekSurface),
-            border = BorderStroke(1.dp, SleekBorder)
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(14.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Surface(
-                    shape = CircleShape,
-                    color = Color(0xFFFF5252).copy(alpha = 0.2f),
-                    modifier = Modifier.size(40.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = Icons.Default.AdminPanelSettings,
-                            contentDescription = null,
-                            tint = Color(0xFFFF5252),
-                            modifier = Modifier.size(22.dp)
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.width(12.dp))
-
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Console Administrateur",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                    Text(
-                        text = "Gérer les utilisateurs inscrits (Code secret: 761278)",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = TextGraySecondary
-                    )
-                }
-
-                Icon(
-                    imageVector = Icons.Default.CheckCircle,
-                    contentDescription = null,
-                    tint = neonColors.neonAccent,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(18.dp))
 
         // SECTION 1: NIGHT & NEON THEME MODES
         Text(

@@ -52,7 +52,7 @@ enum class AppTab {
 class ChatViewModel(application: Application) : AndroidViewModel(application) {
     private val database = AppDatabase.getInstance(application)
     private val prefs = application.getSharedPreferences("neoncrypt_auth_prefs", Context.MODE_PRIVATE)
-    val firebaseManager = FirebaseRealtimeManager(application.applicationContext, database.chatDao())
+    val firebaseManager = FirebaseRealtimeManager(application.applicationContext, database.chatDao(), database.userAccountDao())
     val openRouterManager = OpenRouterChatbotManager(application.applicationContext)
     val thirdPartyBridgeManager = ThirdPartyBridgeManager(application.applicationContext)
 

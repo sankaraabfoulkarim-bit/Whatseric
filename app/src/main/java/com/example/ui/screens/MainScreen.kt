@@ -57,6 +57,8 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -109,6 +111,9 @@ fun MainScreen(
     val nightBrightness by viewModel.nightReadingBrightness.collectAsStateWithLifecycle()
     val isSearchOpen by viewModel.isSearchOpen.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+
+    var titleClickCount by remember { mutableIntStateOf(0) }
+    var lastTitleClickTime by remember { mutableLongStateOf(0L) }
 
     NeonCryptTheme(nightMode = nightMode) {
         val neonColors = LocalNeonColors.current
@@ -184,7 +189,26 @@ fun MainScreen(
                                         shape = RoundedCornerShape(12.dp)
                                     )
                                 } else {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .clickable {
+                                                val now = System.currentTimeMillis()
+                                                if (now - lastTitleClickTime < 1000L) {
+                                                    titleClickCount++
+                                                } else {
+                                                    titleClickCount = 1
+                                                }
+                                                lastTitleClickTime = now
+                                                if (titleClickCount >= 3) {
+                                                    titleClickCount = 0
+                                                    viewModel.showAdminConsole(true)
+                                                }
+                                            }
+                                            .padding(horizontal = 4.dp, vertical = 4.dp)
+                                            .testTag("app_title_header")
+                                    ) {
                                         Icon(
                                             imageVector = Icons.Default.Lock,
                                             contentDescription = "MaelysCryp Logo",

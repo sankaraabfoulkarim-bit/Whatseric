@@ -307,7 +307,7 @@ private fun AdminPinAuthView(
                 Spacer(modifier = Modifier.height(6.dp))
 
                 Text(
-                    text = "Code secret requis pour gérer les inscrits, le Chatbot OpenRouter et les Outils tiers.",
+                    text = "Accès restreint. Veuillez saisir le code PIN de sécurité administrateur.",
                     style = MaterialTheme.typography.bodySmall,
                     color = TextGraySecondary,
                     textAlign = TextAlign.Center
@@ -318,8 +318,8 @@ private fun AdminPinAuthView(
                 OutlinedTextField(
                     value = enteredPin,
                     onValueChange = { if (it.length <= 10) onPinChange(it) },
-                    label = { Text("Code secret (761278)") },
-                    placeholder = { Text("761278") },
+                    label = { Text("Code PIN de sécurité") },
+                    placeholder = { Text("Entrez le PIN...") },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.NumberPassword,

@@ -621,31 +621,6 @@ fun AuthScreen(
             }
 
             Spacer(modifier = Modifier.height(24.dp))
-
-            // HIDDEN / DISCREET ADMIN ACCESS BUTTON
-            Row(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(12.dp))
-                    .clickable { onOpenAdminConsole() }
-                    .padding(horizontal = 14.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Default.AdminPanelSettings,
-                    contentDescription = "Console Admin",
-                    tint = TextGraySecondary,
-                    modifier = Modifier.size(16.dp)
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = "Console Admin (Code: 761278)",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = TextGraySecondary,
-                    fontSize = 11.sp
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }

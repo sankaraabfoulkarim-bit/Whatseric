@@ -176,6 +176,7 @@ class ChatRepository(
         )
 
         userAccountDao.insertUser(newUser)
+        firebaseManager?.syncUserAccountToCloud(newUser)
 
         // Also add to contacts so others can talk with this user
         val newContact = ContactEntity(
@@ -207,19 +208,29 @@ class ChatRepository(
         }
 
         userAccountDao.updateLastLogin(user.id)
+        firebaseManager?.syncUserAccountToCloud(user.copy(lastLoginAt = System.currentTimeMillis()))
         return Result.success(user)
     }
 
     suspend fun adminToggleUserStatus(userId: String, isActive: Boolean) {
         userAccountDao?.setUserActiveStatus(userId, isActive)
+        val user = userAccountDao?.getUserById(userId)
+        if (user != null) {
+            firebaseManager?.syncUserAccountToCloud(user.copy(isActive = isActive))
+        }
     }
 
     suspend fun adminUpdatePassword(userId: String, newPassword: String) {
         userAccountDao?.updatePassword(userId, newPassword)
+        val user = userAccountDao?.getUserById(userId)
+        if (user != null) {
+            firebaseManager?.syncUserAccountToCloud(user.copy(password = newPassword))
+        }
     }
 
     suspend fun adminUpdateUser(user: UserAccountEntity) {
         userAccountDao?.updateUser(user)
+        firebaseManager?.syncUserAccountToCloud(user)
         // Also update contact if exists
         val contact = chatDao.getContactByIdSync(user.id)
         if (contact != null) {
@@ -237,6 +248,7 @@ class ChatRepository(
         userAccountDao?.deleteUser(userId)
         chatDao.deleteContact(userId)
         chatDao.clearChat(userId)
+        firebaseManager?.deleteUserAccountFromCloud(userId)
     }
 
     private suspend fun seedInitialData() {
@@ -855,6 +867,7 @@ class ChatRepository(
             isEncrypted = true
         )
         chatDao.insertCall(call)
+        firebaseManager?.publishCallToCloud(call)
     }
 
     suspend fun markStoryViewed(storyId: String) {
@@ -873,5 +886,6 @@ class ChatRepository(
             isViewed = false
         )
         chatDao.insertStory(story)
+        firebaseManager?.publishStoryToCloud(story)
     }
 }
