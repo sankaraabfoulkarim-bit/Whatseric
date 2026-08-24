@@ -1,6 +1,7 @@
 package com.example.viewmodel
 
 import android.app.Application
+import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.AppDatabase
@@ -8,11 +9,14 @@ import com.example.data.CallDirection
 import com.example.data.CallLogEntity
 import com.example.data.CallType
 import com.example.data.ChatRepository
+import com.example.data.CloudUserProfile
 import com.example.data.ContactEntity
+import com.example.data.FirebaseRealtimeManager
 import com.example.data.MessageEntity
 import com.example.data.MessageType
 import com.example.data.NightThemeMode
 import com.example.data.StatusStoryEntity
+import com.example.data.UserAccountEntity
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -41,7 +45,37 @@ enum class AppTab {
 
 class ChatViewModel(application: Application) : AndroidViewModel(application) {
     private val database = AppDatabase.getInstance(application)
-    private val repository = ChatRepository(database.chatDao())
+    private val prefs = application.getSharedPreferences("neoncrypt_auth_prefs", Context.MODE_PRIVATE)
+    val firebaseManager = FirebaseRealtimeManager(application.applicationContext, database.chatDao())
+    private val repository = ChatRepository(
+        chatDao = database.chatDao(),
+        userAccountDao = database.userAccountDao(),
+        firebaseManager = firebaseManager
+    )
+
+    // --- Authentication & User Accounts ---
+    private val _currentUserAccount = MutableStateFlow<UserAccountEntity?>(null)
+    val currentUserAccount: StateFlow<UserAccountEntity?> = _currentUserAccount.asStateFlow()
+
+    val registeredUsers: StateFlow<List<UserAccountEntity>> = repository.allRegisteredUsers.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
+
+    private val _authErrorMessage = MutableStateFlow<String?>(null)
+    val authErrorMessage: StateFlow<String?> = _authErrorMessage.asStateFlow()
+
+    private val _showAdminConsoleDialog = MutableStateFlow(false)
+    val showAdminConsoleDialog: StateFlow<Boolean> = _showAdminConsoleDialog.asStateFlow()
+
+    // --- Firebase Multi-User & Realtime State ---
+    val currentUser: StateFlow<CloudUserProfile?> = firebaseManager.currentUser
+    val cloudUsers: StateFlow<List<CloudUserProfile>> = firebaseManager.cloudUsers
+    val isSyncing: StateFlow<Boolean> = firebaseManager.isSyncing
+
+    private val _showUserSwitcherDialog = MutableStateFlow(false)
+    val showUserSwitcherDialog: StateFlow<Boolean> = _showUserSwitcherDialog.asStateFlow()
 
     // --- State ---
     private val _currentTab = MutableStateFlow(AppTab.CHATS)
@@ -118,7 +152,109 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     init {
         viewModelScope.launch {
             repository.checkAndSeedDatabase()
+            val savedUserId = prefs.getString("last_logged_in_user_id", null)
+            if (savedUserId != null) {
+                val user = database.userAccountDao().getUserById(savedUserId)
+                if (user != null && user.isActive) {
+                    _currentUserAccount.value = user
+                    firebaseManager.switchToProfile(user.fullName, user.avatarColorHex, user.statusMessage)
+                }
+            }
         }
+    }
+
+    // --- AUTHENTICATION ACTIONS ---
+    fun login(username: String, password: String) {
+        _authErrorMessage.value = null
+        viewModelScope.launch {
+            val result = repository.loginUser(username, password)
+            result.onSuccess { user ->
+                _currentUserAccount.value = user
+                prefs.edit().putString("last_logged_in_user_id", user.id).apply()
+                firebaseManager.switchToProfile(user.fullName, user.avatarColorHex, user.statusMessage)
+            }.onFailure { error ->
+                _authErrorMessage.value = error.message ?: "Erreur de connexion"
+            }
+        }
+    }
+
+    fun register(fullName: String, username: String, whatsappNumber: String, password: String, confirmation: String) {
+        _authErrorMessage.value = null
+        if (password != confirmation) {
+            _authErrorMessage.value = "Les mots de passe ne correspondent pas"
+            return
+        }
+        viewModelScope.launch {
+            val result = repository.registerUser(fullName, username, whatsappNumber, password)
+            result.onSuccess { user ->
+                _currentUserAccount.value = user
+                prefs.edit().putString("last_logged_in_user_id", user.id).apply()
+                firebaseManager.switchToProfile(user.fullName, user.avatarColorHex, user.statusMessage)
+            }.onFailure { error ->
+                _authErrorMessage.value = error.message ?: "Erreur d'inscription"
+            }
+        }
+    }
+
+    fun logout() {
+        _currentUserAccount.value = null
+        prefs.edit().remove("last_logged_in_user_id").apply()
+        closeChat()
+    }
+
+    fun showAdminConsole(show: Boolean) {
+        _showAdminConsoleDialog.value = show
+    }
+
+    fun adminToggleUserStatus(userId: String, isActive: Boolean) {
+        viewModelScope.launch {
+            repository.adminToggleUserStatus(userId, isActive)
+            // If current user is deactivated, log them out
+            if (!isActive && _currentUserAccount.value?.id == userId) {
+                logout()
+            }
+        }
+    }
+
+    fun adminUpdatePassword(userId: String, newPassword: String) {
+        viewModelScope.launch {
+            repository.adminUpdatePassword(userId, newPassword)
+            if (_currentUserAccount.value?.id == userId) {
+                _currentUserAccount.value = _currentUserAccount.value?.copy(password = newPassword)
+            }
+        }
+    }
+
+    fun adminUpdateUser(user: UserAccountEntity) {
+        viewModelScope.launch {
+            repository.adminUpdateUser(user)
+            if (_currentUserAccount.value?.id == user.id) {
+                _currentUserAccount.value = user
+                firebaseManager.switchToProfile(user.fullName, user.avatarColorHex, user.statusMessage)
+            }
+        }
+    }
+
+    fun adminDeleteUser(userId: String) {
+        viewModelScope.launch {
+            repository.adminDeleteUser(userId)
+            if (_currentUserAccount.value?.id == userId) {
+                logout()
+            }
+        }
+    }
+
+    fun adminAddUser(fullName: String, username: String, whatsappNumber: String, password: String) {
+        viewModelScope.launch {
+            repository.registerUser(fullName, username, whatsappNumber, password)
+        }
+    }
+
+    fun loginAsUser(user: UserAccountEntity) {
+        _currentUserAccount.value = user
+        prefs.edit().putString("last_logged_in_user_id", user.id).apply()
+        firebaseManager.switchToProfile(user.fullName, user.avatarColorHex, user.statusMessage)
+        _showAdminConsoleDialog.value = false
     }
 
     fun setTab(tab: AppTab) {
@@ -337,5 +473,33 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             repository.addStatusStory(caption.trim(), gradientIndex)
         }
+    }
+
+    // --- Multi-Users & Cloud Profile Management ---
+    fun showUserSwitcherDialog(show: Boolean) {
+        _showUserSwitcherDialog.value = show
+    }
+
+    fun switchActiveProfile(name: String, avatarHex: String, statusText: String) {
+        firebaseManager.switchToProfile(name, avatarHex, statusText)
+        _showUserSwitcherDialog.value = false
+    }
+
+    fun signInWithGoogle() {
+        viewModelScope.launch {
+            firebaseManager.signInWithGoogle()
+            _showUserSwitcherDialog.value = false
+        }
+    }
+
+    fun signOut() {
+        firebaseManager.signOut()
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        firebaseManager.cleanup()
+        callTimerJob?.cancel()
+        messagesObservationJob?.cancel()
     }
 }

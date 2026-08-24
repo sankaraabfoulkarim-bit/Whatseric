@@ -3,7 +3,6 @@ package com.example.ui.screens
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,12 +18,14 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.QrCode
-import androidx.compose.material.icons.filled.Shield
-import androidx.compose.material.icons.filled.VpnKey
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -32,42 +33,34 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.data.ContactEntity
 import com.example.ui.components.NeonAvatar
-import com.example.ui.components.SafetyNumberGrid
 import com.example.ui.theme.LocalNeonColors
-import com.example.ui.theme.NeonCyan
-import com.example.ui.theme.NeonEmerald
+import com.example.ui.theme.SleekBorder
+import com.example.ui.theme.SleekSurface
+import com.example.ui.theme.TextGrayMuted
 import com.example.ui.theme.TextGraySecondary
 
 @Composable
 fun SafetyVerificationDialog(
     contact: ContactEntity,
     onDismiss: () -> Unit,
-    onConfirmVerification: (String) -> Unit
+    onConfirmVerification: (String) -> Unit = {}
 ) {
     val neonColors = LocalNeonColors.current
-    var isQrMode by remember { mutableStateOf(false) }
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -75,16 +68,16 @@ fun SafetyVerificationDialog(
     ) {
         Surface(
             modifier = Modifier
-                .fillMaxWidth(0.94f)
+                .fillMaxWidth(0.92f)
                 .clip(RoundedCornerShape(24.dp))
-                .border(1.dp, neonColors.neonAccent.copy(alpha = 0.5f), RoundedCornerShape(24.dp))
+                .border(1.dp, SleekBorder, RoundedCornerShape(24.dp))
                 .testTag("safety_verification_dialog"),
             color = neonColors.cardBackground
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(20.dp)
+                    .padding(22.dp)
                     .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -96,14 +89,14 @@ fun SafetyVerificationDialog(
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
-                            imageVector = Icons.Default.Shield,
-                            contentDescription = "Shield",
+                            imageVector = Icons.Default.Person,
+                            contentDescription = "Profil",
                             tint = neonColors.neonAccent,
-                            modifier = Modifier.size(24.dp)
+                            modifier = Modifier.size(22.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Code de sécurité E2EE",
+                            text = "Profil du contact",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
@@ -121,202 +114,136 @@ fun SafetyVerificationDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Contact Info
+                // Avatar & Name
                 NeonAvatar(
                     name = contact.name,
                     avatarColorHex = contact.avatarColorHex,
-                    size = 56.dp,
-                    isVerified = contact.isVerified
+                    size = 72.dp,
+                    isOnline = contact.isOnline
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
                 Text(
                     text = contact.name,
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
 
+                Spacer(modifier = Modifier.height(2.dp))
+
                 Text(
-                    text = contact.phoneNumber,
+                    text = if (contact.isOnline) "En ligne actuellement" else contact.lastSeen,
                     style = MaterialTheme.typography.bodySmall,
-                    color = TextGraySecondary
+                    color = if (contact.isOnline) neonColors.neonAccent else TextGrayMuted
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(18.dp))
 
-                // Mode switcher (Code 60 chiffres vs Code QR)
-                Row(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                        .padding(4.dp),
-                    horizontalArrangement = Arrangement.Center
+                // Phone & Status Cards
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = SleekSurface),
+                    border = BorderStroke(1.dp, SleekBorder),
+                    shape = RoundedCornerShape(16.dp)
                 ) {
-                    Surface(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .clickable { isQrMode = false },
-                        color = if (!isQrMode) neonColors.neonAccent.copy(alpha = 0.2f) else Color.Transparent,
-                        border = if (!isQrMode) BorderStroke(1.dp, neonColors.neonAccent) else null
-                    ) {
-                        Text(
-                            text = "60 Chiffres",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = if (!isQrMode) neonColors.neonAccent else TextGraySecondary,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.width(4.dp))
-
-                    Surface(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .clickable { isQrMode = true },
-                        color = if (isQrMode) neonColors.neonAccent.copy(alpha = 0.2f) else Color.Transparent,
-                        border = if (isQrMode) BorderStroke(1.dp, neonColors.neonAccent) else null
-                    ) {
-                        Text(
-                            text = "Scanner QR",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = if (isQrMode) neonColors.neonAccent else TextGraySecondary,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                if (isQrMode) {
-                    // QR Code visual display
-                    Card(
-                        modifier = Modifier.size(200.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
-                        shape = RoundedCornerShape(16.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier.fillMaxWidth().height(200.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.QrCode,
-                                    contentDescription = "QR Code",
-                                    tint = Color(0xFF070B10),
-                                    modifier = Modifier.size(140.dp)
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        // Phone Row
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Phone,
+                                contentDescription = "Téléphone",
+                                tint = neonColors.neonAccent,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(
+                                    text = "Numéro de téléphone",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = TextGraySecondary
                                 )
                                 Text(
-                                    text = contact.publicKeyFingerprint,
-                                    style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
-                                    color = Color(0xFF070B10),
-                                    fontWeight = FontWeight.Bold
+                                    text = contact.phoneNumber,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSurface
                                 )
                             }
                         }
-                    }
-                } else {
-                    // 60-digit Safety Number
-                    SafetyNumberGrid(safetyNumber = contact.safetyNumber)
-                }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(14.dp))
 
-                // Security Protocol Details
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
+                        // Status Row
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
-                                imageVector = Icons.Default.Lock,
-                                contentDescription = "Lock",
-                                tint = NeonCyan,
-                                modifier = Modifier.size(16.dp)
+                                imageVector = Icons.Default.Info,
+                                contentDescription = "Statut",
+                                tint = neonColors.neonAccent,
+                                modifier = Modifier.size(18.dp)
                             )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "Protocole Cryptographique Vérifié",
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = NeonCyan
-                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(
+                                    text = "Actu / Statut",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = TextGraySecondary
+                                )
+                                Text(
+                                    text = contact.statusMessage,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
                         }
 
-                        Spacer(modifier = Modifier.height(6.dp))
-
-                        Text(
-                            text = "• Algorithme de chiffrement : AES-256-GCM\n" +
-                                   "• Hachage d'intégrité : SHA-256 / Tag 128-bit\n" +
-                                   "• Clé publique : ${contact.publicKeyFingerprint}\n" +
-                                   "• Confidentialité persistante (PFS)",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            lineHeight = 18.sp
-                        )
+                        if (contact.ephemeralTimerMinutes > 0) {
+                            Spacer(modifier = Modifier.height(14.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.Timer,
+                                    contentDescription = "Éphémère",
+                                    tint = Color(0xFFB388FF),
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column {
+                                    Text(
+                                        text = "Messages éphémères",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = TextGraySecondary
+                                    )
+                                    Text(
+                                        text = "Actif : ${contact.ephemeralTimerMinutes} minutes",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = Color(0xFFB388FF),
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // Actions
-                if (contact.isVerified) {
-                    Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        color = neonColors.neonAccent.copy(alpha = 0.15f),
-                        shape = RoundedCornerShape(12.dp),
-                        border = BorderStroke(1.dp, neonColors.neonAccent)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.CheckCircle,
-                                contentDescription = "Verified",
-                                tint = neonColors.neonAccent,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "Contact certifié de bout en bout",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = neonColors.neonAccent,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-                } else {
-                    Button(
-                        onClick = { onConfirmVerification(contact.id) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(50.dp)
-                            .testTag("verify_contact_button"),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = neonColors.neonAccent,
-                            contentColor = Color(0xFF002A1C)
-                        ),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.CheckCircle,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Marquer comme vérifié",
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+                // Close Button
+                Button(
+                    onClick = onDismiss,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = neonColors.neonAccent,
+                        contentColor = Color(0xFF002A1C)
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(
+                        text = "Fermer",
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
         }

@@ -20,10 +20,14 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Chat
+import androidx.compose.material.icons.filled.CloudDone
+import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -40,106 +44,170 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.data.CloudUserProfile
 import com.example.data.ContactEntity
 import com.example.ui.components.NeonAvatar
 import com.example.ui.theme.BadgeRed
 import com.example.ui.theme.CheckmarkBlue
 import com.example.ui.theme.LocalNeonColors
 import com.example.ui.theme.NeonEmerald
+import com.example.ui.theme.SleekBorder
+import com.example.ui.theme.SleekSurface
+import com.example.ui.theme.SleekSurfaceVariant
 import com.example.ui.theme.TextGrayMuted
 import com.example.ui.theme.TextGraySecondary
 
 @Composable
 fun ChatListScreen(
     contacts: List<ContactEntity>,
+    currentUser: CloudUserProfile? = null,
+    isSyncing: Boolean = false,
     onSelectContact: (ContactEntity) -> Unit,
     onOpenSecurityVerification: (ContactEntity) -> Unit,
+    onOpenUserSwitcher: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val neonColors = LocalNeonColors.current
 
-    if (contacts.isEmpty()) {
-        Box(
-            modifier = modifier
-                .fillMaxSize()
-                .padding(32.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+    LazyColumn(
+        modifier = modifier
+            .fillMaxSize()
+            .testTag("chat_list_view")
+    ) {
+        // Multi-User Cloud Realtime Status Bar
+        item {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .clickable { onOpenUserSwitcher() }
+                    .testTag("user_switcher_banner"),
+                shape = RoundedCornerShape(14.dp),
+                color = SleekSurface,
+                border = BorderStroke(1.dp, SleekBorder)
             ) {
-                Surface(
-                    shape = CircleShape,
-                    color = neonColors.neonAccent.copy(alpha = 0.15f),
-                    modifier = Modifier.size(80.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = Icons.Default.Chat,
-                            contentDescription = null,
-                            tint = neonColors.neonAccent,
-                            modifier = Modifier.size(40.dp)
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Text(
-                    text = "Aucune discussion trouvée",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-
-                Spacer(modifier = Modifier.height(6.dp))
-
-                Text(
-                    text = "Démarrez une nouvelle conversation chiffrée avec le bouton '+' en bas à droite.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = TextGraySecondary,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                )
-            }
-        }
-    } else {
-        LazyColumn(
-            modifier = modifier
-                .fillMaxSize()
-                .testTag("chat_list_view")
-        ) {
-            // E2EE Banner for conversation list
-            item {
-                Surface(
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    color = neonColors.securityNoticeBg,
-                    border = BorderStroke(0.6.dp, neonColors.neonAccent.copy(alpha = 0.3f))
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                        modifier = Modifier.weight(1f),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Security,
-                            contentDescription = "Security",
-                            tint = neonColors.neonAccent,
-                            modifier = Modifier.size(16.dp)
+                        NeonAvatar(
+                            name = currentUser?.displayName ?: "Kylian",
+                            avatarColorHex = currentUser?.avatarColorHex ?: "#00F2FF",
+                            size = 36.dp,
+                            isOnline = true
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = currentUser?.displayName ?: "Kylian (Vous)",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .size(6.dp)
+                                        .clip(CircleShape)
+                                        .background(neonColors.neonAccent)
+                                )
+                            }
+                            Text(
+                                text = "En ligne • Multi-comptes",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = neonColors.neonAccent,
+                                fontSize = 10.sp
+                            )
+                        }
+                    }
+
+                    // Cloud Switch button pill
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = SleekSurfaceVariant,
+                        border = BorderStroke(0.8.dp, neonColors.neonAccent.copy(alpha = 0.5f))
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = if (isSyncing) Icons.Default.CloudSync else Icons.Default.People,
+                                contentDescription = "Changer",
+                                tint = neonColors.neonAccent,
+                                modifier = Modifier.size(13.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "Basculer",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color.White,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        if (contacts.isEmpty()) {
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(40.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = neonColors.neonAccent.copy(alpha = 0.15f),
+                            modifier = Modifier.size(70.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Default.Chat,
+                                    contentDescription = null,
+                                    tint = neonColors.neonAccent,
+                                    modifier = Modifier.size(34.dp)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
                         Text(
-                            text = "Vos discussions personnelles sont chiffrées de bout en bout.",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = neonColors.neonAccent,
-                            fontSize = 11.sp
+                            text = "Aucune discussion trouvée",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        Text(
+                            text = "Démarrez une nouvelle conversation avec le bouton '+' ci-dessous.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextGraySecondary,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
                         )
                     }
                 }
             }
-
+        } else {
             items(contacts, key = { it.id }) { contact ->
                 ChatItemRow(
                     contact = contact,
@@ -172,13 +240,12 @@ fun ChatItemRow(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Contact Avatar with Online Pulse & Verified Badge
+            // Contact Avatar with Online Pulse
             NeonAvatar(
                 name = contact.name,
                 avatarColorHex = contact.avatarColorHex,
                 size = 52.dp,
-                isOnline = contact.isOnline,
-                isVerified = contact.isVerified
+                isOnline = contact.isOnline
             )
 
             Spacer(modifier = Modifier.width(14.dp))
@@ -190,25 +257,14 @@ fun ChatItemRow(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = contact.name,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        if (contact.isVerified) {
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Icon(
-                                imageVector = Icons.Default.Lock,
-                                contentDescription = "Clé validée",
-                                tint = neonColors.neonAccent,
-                                modifier = Modifier.size(13.dp)
-                            )
-                        }
-                    }
+                    Text(
+                        text = contact.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
 
                     // Time or Status
                     Text(

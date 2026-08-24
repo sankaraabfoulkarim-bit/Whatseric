@@ -25,10 +25,12 @@ import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Nightlight
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.VpnKey
@@ -95,6 +97,13 @@ fun MainScreen(
     val verifyingContact by viewModel.verifyingContact.collectAsStateWithLifecycle()
     val showNewChatDialog by viewModel.showNewChatDialog.collectAsStateWithLifecycle()
     val showEphemeralDialog by viewModel.showEphemeralDialog.collectAsStateWithLifecycle()
+    val currentUserAccount by viewModel.currentUserAccount.collectAsStateWithLifecycle()
+    val registeredUsers by viewModel.registeredUsers.collectAsStateWithLifecycle()
+    val authErrorMessage by viewModel.authErrorMessage.collectAsStateWithLifecycle()
+    val showAdminConsoleDialog by viewModel.showAdminConsoleDialog.collectAsStateWithLifecycle()
+    val currentUser by viewModel.currentUser.collectAsStateWithLifecycle()
+    val isSyncing by viewModel.isSyncing.collectAsStateWithLifecycle()
+    val showUserSwitcherDialog by viewModel.showUserSwitcherDialog.collectAsStateWithLifecycle()
     val nightMode by viewModel.nightThemeMode.collectAsStateWithLifecycle()
     val nightBrightness by viewModel.nightReadingBrightness.collectAsStateWithLifecycle()
     val isSearchOpen by viewModel.isSearchOpen.collectAsStateWithLifecycle()
@@ -110,8 +119,19 @@ fun MainScreen(
                 .background(MaterialTheme.colorScheme.background)
                 .alpha(nightBrightness)
         ) {
-            // If a conversation is opened, show ChatScreen full screen
-            if (selectedContact != null) {
+            if (currentUserAccount == null) {
+                // AUTH SCREEN (CONNEXION & INSCRIPTION)
+                AuthScreen(
+                    registeredUsers = registeredUsers,
+                    onLogin = { username, password -> viewModel.login(username, password) },
+                    onRegister = { fullName, username, whatsapp, password, confirm ->
+                        viewModel.register(fullName, username, whatsapp, password, confirm)
+                    },
+                    onOpenAdminConsole = { viewModel.showAdminConsole(true) },
+                    authErrorMessage = authErrorMessage
+                )
+            } else if (selectedContact != null) {
+                // If a conversation is opened, show ChatScreen full screen
                 ChatScreen(
                     contact = selectedContact!!,
                     messages = activeChatMessages,
@@ -142,7 +162,15 @@ fun MainScreen(
                                 if (isSearchOpen) {
                                     OutlinedTextField(
                                         value = searchQuery,
-                                        onValueChange = { viewModel.setSearchQuery(it) },
+                                        onValueChange = { query ->
+                                            if (query.trim() == "761278") {
+                                                viewModel.setSearchQuery("")
+                                                viewModel.toggleSearch()
+                                                viewModel.showAdminConsole(true)
+                                            } else {
+                                                viewModel.setSearchQuery(query)
+                                            }
+                                        },
                                         placeholder = { Text("Rechercher dans NeonCrypt...") },
                                         modifier = Modifier
                                             .fillMaxWidth()
@@ -180,6 +208,28 @@ fun MainScreen(
                                         imageVector = if (isSearchOpen) Icons.Default.Close else Icons.Default.Search,
                                         contentDescription = "Recherche"
                                     )
+                                }
+
+                                // Multi-User profile / cloud switcher button
+                                IconButton(
+                                    onClick = { viewModel.showUserSwitcherDialog(true) },
+                                    modifier = Modifier.testTag("top_bar_user_profile_button")
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(28.dp)
+                                            .clip(CircleShape)
+                                            .background(neonColors.neonAccent.copy(alpha = 0.2f))
+                                            .border(1.dp, neonColors.neonAccent, CircleShape),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = currentUserAccount?.fullName?.take(1) ?: (currentUser?.displayName?.take(1) ?: "K"),
+                                            color = neonColors.neonAccent,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 12.sp
+                                        )
+                                    }
                                 }
 
                                 // Quick night theme toggle
@@ -248,7 +298,7 @@ fun MainScreen(
                                 selected = currentTab == AppTab.STATUS,
                                 onClick = { viewModel.setTab(AppTab.STATUS) },
                                 icon = {
-                                    Icon(Icons.Default.Security, contentDescription = "Statuts")
+                                    Icon(Icons.Default.History, contentDescription = "Statuts")
                                 },
                                 label = { Text("Statuts", fontWeight = if (currentTab == AppTab.STATUS) FontWeight.Bold else FontWeight.Normal) },
                                 colors = NavigationBarItemDefaults.colors(
@@ -279,14 +329,14 @@ fun MainScreen(
                                 modifier = Modifier.testTag("nav_tab_calls")
                             )
 
-                            // 4. Sécurité
+                            // 4. Paramètres
                             NavigationBarItem(
                                 selected = currentTab == AppTab.SECURITY,
                                 onClick = { viewModel.setTab(AppTab.SECURITY) },
                                 icon = {
-                                    Icon(Icons.Default.Shield, contentDescription = "Sécurité & Nuit")
+                                    Icon(Icons.Default.Settings, contentDescription = "Paramètres")
                                 },
-                                label = { Text("Sécurité", fontWeight = if (currentTab == AppTab.SECURITY) FontWeight.Bold else FontWeight.Normal) },
+                                label = { Text("Paramètres", fontWeight = if (currentTab == AppTab.SECURITY) FontWeight.Bold else FontWeight.Normal) },
                                 colors = NavigationBarItemDefaults.colors(
                                     selectedIconColor = Color(0xFF002A1C),
                                     indicatorColor = neonColors.neonAccent,
@@ -321,8 +371,11 @@ fun MainScreen(
                                 AppTab.CHATS -> {
                                     ChatListScreen(
                                         contacts = filteredContacts,
+                                        currentUser = currentUser,
+                                        isSyncing = isSyncing,
                                         onSelectContact = { contact -> viewModel.openChat(contact) },
-                                        onOpenSecurityVerification = { contact -> viewModel.showVerificationDialog(contact) }
+                                        onOpenSecurityVerification = { contact -> viewModel.showVerificationDialog(contact) },
+                                        onOpenUserSwitcher = { viewModel.showUserSwitcherDialog(true) }
                                     )
                                 }
                                 AppTab.STATUS -> {
@@ -346,7 +399,10 @@ fun MainScreen(
                                         currentNightMode = nightMode,
                                         nightBrightness = nightBrightness,
                                         onNightModeChange = { mode -> viewModel.setNightMode(mode) },
-                                        onBrightnessChange = { brightness -> viewModel.setNightReadingBrightness(brightness) }
+                                        onBrightnessChange = { brightness -> viewModel.setNightReadingBrightness(brightness) },
+                                        currentUserAccount = currentUserAccount,
+                                        onLogout = { viewModel.logout() },
+                                        onOpenAdminConsole = { viewModel.showAdminConsole(true) }
                                     )
                                 }
                             }
@@ -388,6 +444,36 @@ fun MainScreen(
                     currentMinutes = selectedContact!!.ephemeralTimerMinutes,
                     onDismiss = { viewModel.showEphemeralDialog(false) },
                     onSelectMinutes = { mins -> viewModel.setEphemeralTimer(mins) }
+                )
+            }
+
+            // Multi-User Cloud & Switcher Dialog
+            if (showUserSwitcherDialog) {
+                MultiUserDialog(
+                    currentUser = currentUser,
+                    isSyncing = isSyncing,
+                    onDismiss = { viewModel.showUserSwitcherDialog(false) },
+                    onSwitchProfile = { name, avatarHex, status ->
+                        viewModel.switchActiveProfile(name, avatarHex, status)
+                    },
+                    onGoogleSignIn = { viewModel.signInWithGoogle() },
+                    onSignOut = { viewModel.signOut() }
+                )
+            }
+
+            // Admin Console Dialog (Protected with PIN 761278)
+            if (showAdminConsoleDialog) {
+                AdminConsoleDialog(
+                    users = registeredUsers,
+                    onDismiss = { viewModel.showAdminConsole(false) },
+                    onToggleUserStatus = { id, active -> viewModel.adminToggleUserStatus(id, active) },
+                    onUpdatePassword = { id, newPass -> viewModel.adminUpdatePassword(id, newPass) },
+                    onUpdateUser = { updatedUser -> viewModel.adminUpdateUser(updatedUser) },
+                    onDeleteUser = { id -> viewModel.adminDeleteUser(id) },
+                    onAddUser = { name, username, whatsapp, pass ->
+                        viewModel.adminAddUser(name, username, whatsapp, pass)
+                    },
+                    onLoginAsUser = { user -> viewModel.loginAsUser(user) }
                 )
             }
         }

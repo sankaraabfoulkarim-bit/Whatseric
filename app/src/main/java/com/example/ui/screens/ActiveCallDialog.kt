@@ -111,42 +111,23 @@ fun ActiveCallDialog(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
-                // Top E2EE security info
+                // Top call info
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.padding(top = 24.dp)
                 ) {
-                    Surface(
-                        color = Color(0x3300F59B),
-                        shape = RoundedCornerShape(16.dp),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, neonColors.neonAccent.copy(alpha = 0.5f))
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Lock,
-                                contentDescription = null,
-                                tint = neonColors.neonAccent,
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "Appel chiffré de bout en bout",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = neonColors.neonAccent,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
                     Text(
-                        text = "Clé de session : ${callState.sessionKeyFingerprint}",
-                        style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
-                        color = TextGraySecondary
+                        text = if (callState.callType == CallType.VIDEO) "Appel Vidéo" else "Appel Vocal",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Color.White,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = formattedDuration,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = neonColors.neonAccent,
+                        fontWeight = FontWeight.Bold
                     )
                 }
 
@@ -179,7 +160,7 @@ fun ActiveCallDialog(
                             name = contact.name,
                             avatarColorHex = contact.avatarColorHex,
                             size = 100.dp,
-                            isVerified = contact.isVerified
+                            isVerified = false
                         )
                     }
 
@@ -195,7 +176,7 @@ fun ActiveCallDialog(
                     Spacer(modifier = Modifier.height(6.dp))
 
                     Text(
-                        text = if (callState.callType == CallType.VIDEO) "Appel Vidéo Sécurisé • $formattedDuration" else "Appel Vocal Sécurisé • $formattedDuration",
+                        text = if (callState.callType == CallType.VIDEO) "En direct • HD" else "En communication",
                         style = MaterialTheme.typography.bodyMedium,
                         color = neonColors.neonAccent
                     )

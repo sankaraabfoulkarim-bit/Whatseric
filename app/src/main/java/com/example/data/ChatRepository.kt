@@ -11,12 +11,15 @@ import java.util.UUID
 
 class ChatRepository(
     private val chatDao: ChatDao,
+    private val userAccountDao: UserAccountDao? = null,
+    val firebaseManager: FirebaseRealtimeManager? = null,
     private val appScope: CoroutineScope = CoroutineScope(Dispatchers.IO)
 ) {
     val allContacts: Flow<List<ContactEntity>> = chatDao.getAllContacts()
     val allStories: Flow<List<StatusStoryEntity>> = chatDao.getAllStories()
     val allCalls: Flow<List<CallLogEntity>> = chatDao.getAllCalls()
     val starredMessages: Flow<List<MessageEntity>> = chatDao.getStarredMessages()
+    val allRegisteredUsers: Flow<List<UserAccountEntity>> = userAccountDao?.getAllUsersFlow() ?: kotlinx.coroutines.flow.flowOf(emptyList())
 
     fun getMessagesForChat(chatId: String): Flow<List<MessageEntity>> =
         chatDao.getMessagesForChat(chatId)
@@ -35,6 +38,177 @@ class ChatRepository(
         if (existing.isEmpty()) {
             seedInitialData()
         }
+        seedInitialUsers()
+    }
+
+    private suspend fun seedInitialUsers() {
+        if (userAccountDao == null) return
+        val count = userAccountDao.getUserCount()
+        if (count == 0) {
+            val defaultUsers = listOf(
+                UserAccountEntity(
+                    id = "user_kylian",
+                    fullName = "Kylian",
+                    username = "kylian",
+                    whatsappNumber = "+33 6 12 34 56 78",
+                    password = "123",
+                    avatarColorHex = "#00F2FF",
+                    statusMessage = "Disponible",
+                    isActive = true,
+                    isAdmin = true
+                ),
+                UserAccountEntity(
+                    id = "user_alice",
+                    fullName = "Alice",
+                    username = "alice",
+                    whatsappNumber = "+33 6 42 10 98 76",
+                    password = "123",
+                    avatarColorHex = "#00F59B",
+                    statusMessage = "En ligne • Chiffré",
+                    isActive = true
+                ),
+                UserAccountEntity(
+                    id = "user_marc",
+                    fullName = "Marc Dubois",
+                    username = "marc",
+                    whatsappNumber = "+33 6 98 76 54 32",
+                    password = "123",
+                    avatarColorHex = "#FF9100",
+                    statusMessage = "Au bureau",
+                    isActive = true
+                ),
+                UserAccountEntity(
+                    id = "user_sophie",
+                    fullName = "Sophie Martin",
+                    username = "sophie",
+                    whatsappNumber = "+33 7 89 54 12 30",
+                    password = "123",
+                    avatarColorHex = "#B388FF",
+                    statusMessage = "Mode nuit activé 🌙",
+                    isActive = true
+                ),
+                UserAccountEntity(
+                    id = "user_lucas",
+                    fullName = "Lucas",
+                    username = "lucas",
+                    whatsappNumber = "+33 6 55 44 33 22",
+                    password = "123",
+                    avatarColorHex = "#00E5FF",
+                    statusMessage = "En vacances 🌴",
+                    isActive = true
+                )
+            )
+            for (u in defaultUsers) {
+                userAccountDao.insertUser(u)
+            }
+        }
+    }
+
+    // --- AUTHENTICATION & USER MANAGEMENT ---
+    suspend fun registerUser(
+        fullName: String,
+        username: String,
+        whatsappNumber: String,
+        password: String
+    ): Result<UserAccountEntity> {
+        if (userAccountDao == null) return Result.failure(Exception("Service indisponible"))
+        val trimmedUsername = username.trim()
+        if (trimmedUsername.isBlank()) {
+            return Result.failure(Exception("Le nom d'utilisateur est requis"))
+        }
+        if (fullName.trim().isBlank()) {
+            return Result.failure(Exception("Le nom complet est requis"))
+        }
+        if (whatsappNumber.trim().isBlank()) {
+            return Result.failure(Exception("Le numéro WhatsApp est requis"))
+        }
+        if (password.length < 3) {
+            return Result.failure(Exception("Le mot de passe doit contenir au moins 3 caractères"))
+        }
+
+        val existing = userAccountDao.getUserByUsername(trimmedUsername)
+        if (existing != null) {
+            return Result.failure(Exception("Le nom d'utilisateur '$trimmedUsername' est déjà utilisé"))
+        }
+
+        val avatarColors = listOf("#00F2FF", "#00F59B", "#FF9100", "#B388FF", "#00E5FF", "#FF5252", "#FFD700")
+        val colorHex = avatarColors[Math.abs(trimmedUsername.hashCode()) % avatarColors.size]
+
+        val newUser = UserAccountEntity(
+            id = UUID.randomUUID().toString(),
+            fullName = fullName.trim(),
+            username = trimmedUsername,
+            whatsappNumber = whatsappNumber.trim(),
+            password = password,
+            avatarColorHex = colorHex,
+            statusMessage = "Disponible",
+            isActive = true,
+            createdAt = System.currentTimeMillis(),
+            lastLoginAt = System.currentTimeMillis()
+        )
+
+        userAccountDao.insertUser(newUser)
+
+        // Also add to contacts so others can talk with this user
+        val newContact = ContactEntity(
+            id = newUser.id,
+            name = newUser.fullName,
+            phoneNumber = newUser.whatsappNumber,
+            avatarColorHex = newUser.avatarColorHex,
+            statusMessage = newUser.statusMessage,
+            isOnline = true,
+            lastSeen = "En ligne"
+        )
+        chatDao.insertContact(newContact)
+
+        return Result.success(newUser)
+    }
+
+    suspend fun loginUser(username: String, password: String): Result<UserAccountEntity> {
+        if (userAccountDao == null) return Result.failure(Exception("Service indisponible"))
+        val trimmedUsername = username.trim()
+        val user = userAccountDao.getUserByUsername(trimmedUsername)
+            ?: return Result.failure(Exception("Nom d'utilisateur '$trimmedUsername' introuvable"))
+
+        if (user.password != password) {
+            return Result.failure(Exception("Mot de passe incorrect"))
+        }
+
+        if (!user.isActive) {
+            return Result.failure(Exception("Ce compte a été suspendu par l'administrateur."))
+        }
+
+        userAccountDao.updateLastLogin(user.id)
+        return Result.success(user)
+    }
+
+    suspend fun adminToggleUserStatus(userId: String, isActive: Boolean) {
+        userAccountDao?.setUserActiveStatus(userId, isActive)
+    }
+
+    suspend fun adminUpdatePassword(userId: String, newPassword: String) {
+        userAccountDao?.updatePassword(userId, newPassword)
+    }
+
+    suspend fun adminUpdateUser(user: UserAccountEntity) {
+        userAccountDao?.updateUser(user)
+        // Also update contact if exists
+        val contact = chatDao.getContactByIdSync(user.id)
+        if (contact != null) {
+            chatDao.updateContact(
+                contact.copy(
+                    name = user.fullName,
+                    phoneNumber = user.whatsappNumber,
+                    statusMessage = user.statusMessage
+                )
+            )
+        }
+    }
+
+    suspend fun adminDeleteUser(userId: String) {
+        userAccountDao?.deleteUser(userId)
+        chatDao.deleteContact(userId)
+        chatDao.clearChat(userId)
     }
 
     private suspend fun seedInitialData() {
@@ -341,15 +515,26 @@ class ChatRepository(
 
         chatDao.insertMessage(message)
 
+        // Publish to Firebase Cloud Realtime
+        firebaseManager?.sendRealtimeCloudMessage(
+            recipientId = chatId,
+            plainText = text,
+            messageType = messageType,
+            voiceDurationSeconds = voiceDurationSeconds,
+            mediaUri = mediaUri
+        )
+
         // Transition status from SENT -> DELIVERED -> READ
         appScope.launch {
-            delay(600)
+            delay(500)
             chatDao.updateMessage(message.copy(status = MessageStatus.DELIVERED))
-            delay(700)
+            delay(600)
             chatDao.updateMessage(message.copy(status = MessageStatus.READ))
 
-            // Trigger realistic automated encrypted reply from the contact
-            simulateContactResponse(chatId, text)
+            // Trigger realistic automated encrypted reply from simulated bot contact
+            if (chatId.startsWith("alice") || chatId.startsWith("group") || chatId.startsWith("sophie") || chatId.startsWith("marc")) {
+                simulateContactResponse(chatId, text)
+            }
         }
     }
 

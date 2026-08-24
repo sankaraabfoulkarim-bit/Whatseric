@@ -266,13 +266,13 @@ fun ChatScreen(
                                     .border(1.dp, SleekBorder, RoundedCornerShape(8.dp))
                             ) {
                                 DropdownMenuItem(
-                                    text = { Text("Code de sécurité E2EE", color = Color.White) },
+                                    text = { Text("Infos du contact", color = Color.White) },
                                     onClick = {
                                         showMenu = false
                                         onOpenVerification()
                                     },
                                     leadingIcon = {
-                                        Icon(Icons.Default.Lock, contentDescription = null, tint = neonColors.neonAccent)
+                                        Icon(Icons.Default.Shield, contentDescription = null, tint = neonColors.neonAccent)
                                     }
                                 )
 
@@ -289,17 +289,6 @@ fun ChatScreen(
                                     },
                                     leadingIcon = {
                                         Icon(Icons.Default.Timer, contentDescription = null, tint = SleekNeonCyan)
-                                    }
-                                )
-
-                                DropdownMenuItem(
-                                    text = { Text("Vérifier les clés", color = Color.White) },
-                                    onClick = {
-                                        showMenu = false
-                                        onOpenVerification()
-                                    },
-                                    leadingIcon = {
-                                        Icon(Icons.Default.Shield, contentDescription = null, tint = neonColors.neonAccent)
                                     }
                                 )
 
@@ -544,7 +533,7 @@ fun ChatScreen(
             contentPadding = PaddingValues(vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Sleek "End-to-end encrypted" pill in center
+            // Sleek Date pill in center
             item {
                 Box(
                     modifier = Modifier.fillMaxWidth(),
@@ -552,31 +541,18 @@ fun ChatScreen(
                 ) {
                     Surface(
                         modifier = Modifier
-                            .padding(vertical = 6.dp)
-                            .clip(CircleShape)
-                            .border(1.dp, SleekBorder, CircleShape)
-                            .clickable { onOpenVerification() },
-                        color = Color(0x801A1C1E) // 50% opacity surface
+                            .padding(vertical = 4.dp)
+                            .clip(CircleShape),
+                        color = Color(0x801A1C1E)
                     ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Lock,
-                                contentDescription = null,
-                                tint = neonColors.neonAccent,
-                                modifier = Modifier.size(12.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "End-to-end encrypted",
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Medium,
-                                color = SleekTextSecondary,
-                                fontSize = 11.sp
-                            )
-                        }
+                        Text(
+                            text = "Aujourd'hui",
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 4.dp),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Medium,
+                            color = SleekTextSecondary,
+                            fontSize = 11.sp
+                        )
                     }
                 }
             }
@@ -728,7 +704,7 @@ fun MessageBubbleItem(
                                     )
                                     Spacer(modifier = Modifier.height(4.dp))
                                     Text(
-                                        text = "Photo Chiffrée AES-256",
+                                        text = "Photo",
                                         style = MaterialTheme.typography.labelSmall,
                                         color = neonColors.neonAccent,
                                         fontWeight = FontWeight.Bold
@@ -784,16 +760,6 @@ fun MessageBubbleItem(
                         MessageStatusIndicator(status = message.status)
                     }
                 }
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                // Raw Ciphertext Inspector (User can expand to view cryptographic payload)
-                CiphertextPayloadViewer(
-                    plainText = message.plainText,
-                    cipherText = message.cipherText,
-                    ivHex = message.ivHex,
-                    authTag = message.authTagHex
-                )
             }
         }
     }

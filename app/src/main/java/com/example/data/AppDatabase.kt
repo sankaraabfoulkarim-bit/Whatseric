@@ -11,14 +11,16 @@ import androidx.room.TypeConverters
         ContactEntity::class,
         MessageEntity::class,
         StatusStoryEntity::class,
-        CallLogEntity::class
+        CallLogEntity::class,
+        UserAccountEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 @TypeConverters(AppTypeConverters::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun chatDao(): ChatDao
+    abstract fun userAccountDao(): UserAccountDao
 
     companion object {
         @Volatile
