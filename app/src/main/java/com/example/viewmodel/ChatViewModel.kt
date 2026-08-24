@@ -17,6 +17,12 @@ import com.example.data.MessageType
 import com.example.data.NightThemeMode
 import com.example.data.StatusStoryEntity
 import com.example.data.UserAccountEntity
+import com.example.data.ai.OpenRouterChatbotManager
+import com.example.data.ai.OpenRouterConfig
+import com.example.data.ai.OpenRouterModelOption
+import com.example.data.integration.ThirdPartyApiKey
+import com.example.data.integration.ThirdPartyApiLog
+import com.example.data.integration.ThirdPartyBridgeManager
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -47,11 +53,32 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     private val database = AppDatabase.getInstance(application)
     private val prefs = application.getSharedPreferences("neoncrypt_auth_prefs", Context.MODE_PRIVATE)
     val firebaseManager = FirebaseRealtimeManager(application.applicationContext, database.chatDao())
+    val openRouterManager = OpenRouterChatbotManager(application.applicationContext)
+    val thirdPartyBridgeManager = ThirdPartyBridgeManager(application.applicationContext)
+
     private val repository = ChatRepository(
         chatDao = database.chatDao(),
         userAccountDao = database.userAccountDao(),
-        firebaseManager = firebaseManager
+        firebaseManager = firebaseManager,
+        openRouterManager = openRouterManager,
+        thirdPartyBridgeManager = thirdPartyBridgeManager
     )
+
+    // --- OpenRouter Chatbot State ---
+    val openRouterConfig: StateFlow<OpenRouterConfig> = openRouterManager.configState
+    val availableAiModels: List<OpenRouterModelOption> = openRouterManager.availableFreeModels
+    private val _aiTestResult = MutableStateFlow<String?>(null)
+    val aiTestResult: StateFlow<String?> = _aiTestResult.asStateFlow()
+    private val _isAiTesting = MutableStateFlow(false)
+    val isAiTesting: StateFlow<Boolean> = _isAiTesting.asStateFlow()
+
+    // --- Third-Party Integrations State ---
+    val thirdPartyApiKeys: StateFlow<List<ThirdPartyApiKey>> = thirdPartyBridgeManager.apiKeys
+    val thirdPartyApiLogs: StateFlow<List<ThirdPartyApiLog>> = thirdPartyBridgeManager.apiLogs
+    private val _webhookTestResult = MutableStateFlow<String?>(null)
+    val webhookTestResult: StateFlow<String?> = _webhookTestResult.asStateFlow()
+    private val _isWebhookTesting = MutableStateFlow(false)
+    val isWebhookTesting: StateFlow<Boolean> = _isWebhookTesting.asStateFlow()
 
     // --- Authentication & User Accounts ---
     private val _currentUserAccount = MutableStateFlow<UserAccountEntity?>(null)
@@ -90,7 +117,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     private val _isSearchOpen = MutableStateFlow(false)
     val isSearchOpen: StateFlow<Boolean> = _isSearchOpen.asStateFlow()
 
-    private val _nightThemeMode = MutableStateFlow(NightThemeMode.OLED_PURE_BLACK)
+    private val _nightThemeMode = MutableStateFlow<NightThemeMode>(NightThemeMode.NEON)
     val nightThemeMode: StateFlow<NightThemeMode> = _nightThemeMode.asStateFlow()
 
     private val _nightReadingBrightness = MutableStateFlow(1.0f) // 0.6f - 1.0f
@@ -473,6 +500,90 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             repository.addStatusStory(caption.trim(), gradientIndex)
         }
+    }
+
+    // --- OpenRouter Chatbot Admin Actions ---
+    fun updateOpenRouterSettings(
+        apiKey: String? = null,
+        selectedModel: String? = null,
+        systemPrompt: String? = null,
+        isChatbotEnabled: Boolean? = null,
+        temperature: Float? = null,
+        maxTokens: Int? = null,
+        enableAutoReply: Boolean? = null
+    ) {
+        openRouterManager.updateConfig(
+            apiKey = apiKey,
+            selectedModel = selectedModel,
+            systemPrompt = systemPrompt,
+            isChatbotEnabled = isChatbotEnabled,
+            temperature = temperature,
+            maxTokens = maxTokens,
+            enableAutoReply = enableAutoReply
+        )
+    }
+
+    fun toggleUserConnectedToChatbot(userId: String, isConnected: Boolean) {
+        openRouterManager.toggleUserConnection(userId, isConnected)
+    }
+
+    fun isUserConnectedToChatbot(userId: String): Boolean {
+        return openRouterManager.isUserConnectedToBot(userId)
+    }
+
+    fun testOpenRouterApi(apiKey: String, model: String) {
+        _isAiTesting.value = true
+        _aiTestResult.value = null
+        viewModelScope.launch {
+            val result = openRouterManager.testOpenRouterConnection(apiKey, model)
+            result.onSuccess { reply ->
+                _aiTestResult.value = "✅ Succès: $reply"
+            }.onFailure { error ->
+                _aiTestResult.value = "❌ Erreur: ${error.message}"
+            }
+            _isAiTesting.value = false
+        }
+    }
+
+    fun clearAiTestResult() {
+        _aiTestResult.value = null
+    }
+
+    // --- Third-Party Integrations Admin Actions ---
+    fun createThirdPartyApiKey(name: String, scopes: List<String>, webhookUrl: String? = null) {
+        thirdPartyBridgeManager.createApiKey(name, scopes, webhookUrl)
+    }
+
+    fun toggleThirdPartyApiKey(keyId: String, isActive: Boolean) {
+        thirdPartyBridgeManager.toggleApiKeyStatus(keyId, isActive)
+    }
+
+    fun deleteThirdPartyApiKey(keyId: String) {
+        thirdPartyBridgeManager.deleteApiKey(keyId)
+    }
+
+    fun testWebhookUrl(url: String, eventName: String = "message.received") {
+        _isWebhookTesting.value = true
+        _webhookTestResult.value = null
+        viewModelScope.launch {
+            val res = thirdPartyBridgeManager.testExternalWebhook(url, eventName)
+            res.onSuccess {
+                _webhookTestResult.value = "✅ $it"
+            }.onFailure {
+                _webhookTestResult.value = "❌ ${it.message}"
+            }
+            _isWebhookTesting.value = false
+        }
+    }
+
+    fun simulateExternalInboundMessage(apiToken: String, chatId: String, messageText: String, senderName: String) {
+        viewModelScope.launch {
+            repository.executeThirdPartyMessage(apiToken, chatId, messageText, senderName)
+        }
+    }
+
+    fun clearWebhookTestResult() {
+        _webhookTestResult.value = null
     }
 
     // --- Multi-Users & Cloud Profile Management ---

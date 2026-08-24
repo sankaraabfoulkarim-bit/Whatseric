@@ -12,6 +12,8 @@ import com.example.crypto.CryptoEngine
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import com.google.firebase.FirebaseApp
+import com.google.firebase.FirebaseOptions
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
@@ -100,6 +102,21 @@ class FirebaseRealtimeManager(
     private var storiesListener: ListenerRegistration? = null
 
     init {
+        try {
+            if (FirebaseApp.getApps(context).isEmpty()) {
+                val options = FirebaseOptions.Builder()
+                    .setApiKey("AIzaSyBq55GrOJL1mAOfmLhDGDIfNFeUxlqDHQ8")
+                    .setApplicationId("1:721905614054:android:4417069a66d5d758518f27")
+                    .setProjectId("gen-lang-client-0415258186")
+                    .setStorageBucket("gen-lang-client-0415258186.firebasestorage.app")
+                    .setGcmSenderId("721905614054")
+                    .build()
+                FirebaseApp.initializeApp(context, options)
+                Log.d("FirebaseRealtime", "FirebaseApp initialisé avec succès avec les clés du projet")
+            }
+        } catch (e: Exception) {
+            Log.w("FirebaseRealtime", "Initialisation FirebaseApp: ${e.message}")
+        }
         // Initialize current user state safely
         checkCurrentUser()
     }
@@ -169,7 +186,7 @@ class FirebaseRealtimeManager(
             return Result.failure(Exception("Firebase Auth n'est pas disponible sur cet appareil"))
         }
         return try {
-            val serverClientId = webClientId ?: "1000000000000-dummy.apps.googleusercontent.com"
+            val serverClientId = webClientId ?: "721905614054-client.apps.googleusercontent.com"
             val googleIdOption = GetSignInWithGoogleOption.Builder(serverClientId)
                 .build()
 

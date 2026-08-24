@@ -156,7 +156,7 @@ fun AuthScreen(
             Spacer(modifier = Modifier.height(14.dp))
 
             Text(
-                text = "NeonCrypt Messenger",
+                text = "MaelysCryp Messenger",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 color = Color.White

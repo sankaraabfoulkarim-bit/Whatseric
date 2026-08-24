@@ -22,6 +22,6 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "NeonCrypt"
+rootProject.name = "MaelysCryp Messenger"
 
 include(":app")

@@ -1,6 +1,6 @@
 {
-  "name": "NeonCrypt",
-  "description": "Application de messagerie sécurisée type WhatsApp chiffrée de bout en bout avec mode sombre et néon pour lecture de nuit.",
+  "name": "MaelysCryp Messenger",
+  "description": "Application de messagerie sécurisée type WhatsApp chiffrée de bout en bout avec modes Clair, Néon et Bleu Ciel.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

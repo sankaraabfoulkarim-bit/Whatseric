@@ -2,7 +2,8 @@ package com.example
 
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onRoot
-import com.example.ui.screens.MainScreen
+import com.example.ui.screens.AuthScreen
+import com.example.ui.theme.MaelysCrypTheme
 import com.github.takahirom.roborazzi.RobolectricDeviceQualifiers
 import com.github.takahirom.roborazzi.captureRoboImage
 import org.junit.Rule
@@ -21,7 +22,16 @@ class GreetingScreenshotTest {
 
   @Test
   fun greeting_screenshot() {
-    composeTestRule.setContent { MainScreen() }
+    composeTestRule.setContent {
+      MaelysCrypTheme {
+        AuthScreen(
+          registeredUsers = emptyList(),
+          onLogin = { _, _ -> },
+          onRegister = { _, _, _, _, _ -> },
+          onOpenAdminConsole = {}
+        )
+      }
+    }
 
     composeTestRule.onRoot().captureRoboImage(filePath = "src/test/screenshots/greeting.png")
   }

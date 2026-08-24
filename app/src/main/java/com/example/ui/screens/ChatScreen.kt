@@ -407,8 +407,8 @@ fun ChatScreen(
                         modifier = Modifier
                             .weight(1f)
                             .clip(RoundedCornerShape(24.dp))
-                            .background(SleekSurface)
-                            .border(1.dp, SleekBorder, RoundedCornerShape(24.dp))
+                            .background(neonColors.cardBackground)
+                            .border(1.dp, neonColors.cardBorder, RoundedCornerShape(24.dp))
                             .padding(horizontal = 12.dp, vertical = 2.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -416,7 +416,7 @@ fun ChatScreen(
                         Icon(
                             imageVector = Icons.Default.Mood,
                             contentDescription = "Emojis",
-                            tint = SleekTextMuted,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier
                                 .size(20.dp)
                                 .clickable { /* Emoji Picker */ }
@@ -432,7 +432,7 @@ fun ChatScreen(
                                 Text(
                                     text = "Message...",
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = SleekTextMuted
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             },
                             colors = TextFieldDefaults.colors(
@@ -441,8 +441,8 @@ fun ChatScreen(
                                 disabledContainerColor = Color.Transparent,
                                 focusedIndicatorColor = Color.Transparent,
                                 unfocusedIndicatorColor = Color.Transparent,
-                                focusedTextColor = Color.White,
-                                unfocusedTextColor = Color.White,
+                                focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                                unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
                                 cursorColor = neonColors.neonAccent
                             ),
                             modifier = Modifier
@@ -724,7 +724,7 @@ fun MessageBubbleItem(
                         Text(
                             text = message.plainText,
                             style = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp),
-                            color = if (isOutgoing) neonColors.outgoingText else SleekTextPrimary,
+                            color = if (isOutgoing) neonColors.outgoingText else MaterialTheme.colorScheme.onSurface,
                             lineHeight = 21.sp
                         )
                     }

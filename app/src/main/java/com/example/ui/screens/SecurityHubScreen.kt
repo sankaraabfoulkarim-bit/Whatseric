@@ -24,12 +24,12 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.CloudDone
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Nightlight
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Storage
-import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -54,7 +54,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.NightThemeMode
-import com.example.ui.theme.AmberPrimary
 import com.example.ui.theme.LocalNeonColors
 import com.example.ui.theme.NeonCyan
 import com.example.ui.theme.NeonEmerald
@@ -304,7 +303,7 @@ fun SecurityHubScreen(
 
         // SECTION 1: NIGHT & NEON THEME MODES
         Text(
-            text = "THÈMES & AFFICHAGE NOCTURNE",
+            text = "MODES D'AFFICHAGE & THÈMES",
             style = MaterialTheme.typography.labelSmall,
             color = neonColors.neonAccent,
             fontWeight = FontWeight.Bold
@@ -312,38 +311,38 @@ fun SecurityHubScreen(
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        // Option 1: OLED Pure Black
+        // Option 1: Mode Clair
         NightModeOptionCard(
-            title = "OLED Pure Black (Émeraude)",
-            subtitle = "Noir absolu ultra contrasté, économise la batterie.",
-            mode = NightThemeMode.OLED_PURE_BLACK,
-            selected = currentNightMode == NightThemeMode.OLED_PURE_BLACK,
-            badgeColor = NeonEmerald,
-            onClick = { onNightModeChange(NightThemeMode.OLED_PURE_BLACK) }
+            title = "Mode Clair",
+            subtitle = "Thème lumineux épuré, contraste idéal pour la journée.",
+            mode = NightThemeMode.LIGHT,
+            selected = currentNightMode == NightThemeMode.LIGHT,
+            badgeColor = Color(0xFF0284C7),
+            onClick = { onNightModeChange(NightThemeMode.LIGHT) }
         )
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Option 2: Midnight Slate Neon
+        // Option 2: Mode Néon
         NightModeOptionCard(
-            title = "Midnight Slate (Cyan Néon)",
-            subtitle = "Nuances ardoise profonde avec accents cyan néon vifs.",
-            mode = NightThemeMode.MIDNIGHT_SLATE,
-            selected = currentNightMode == NightThemeMode.MIDNIGHT_SLATE,
+            title = "Mode Néon",
+            subtitle = "Noir profond ultra-contrasté avec accents néon électrisants.",
+            mode = NightThemeMode.NEON,
+            selected = currentNightMode == NightThemeMode.NEON,
             badgeColor = NeonCyan,
-            onClick = { onNightModeChange(NightThemeMode.MIDNIGHT_SLATE) }
+            onClick = { onNightModeChange(NightThemeMode.NEON) }
         )
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Option 3: Amber Night Reading
+        // Option 3: Mode Bleu Ciel
         NightModeOptionCard(
-            title = "Filtre Ambre (Confort Lecture)",
-            subtitle = "Ton chaud apaisant sans lumière bleue pour la nuit.",
-            mode = NightThemeMode.AMBER_NIGHT_FILTER,
-            selected = currentNightMode == NightThemeMode.AMBER_NIGHT_FILTER,
-            badgeColor = AmberPrimary,
-            onClick = { onNightModeChange(NightThemeMode.AMBER_NIGHT_FILTER) }
+            title = "Mode Bleu Ciel",
+            subtitle = "Nuances azur & marine élégantes avec accents Sky Blue.",
+            mode = NightThemeMode.SKY_BLUE,
+            selected = currentNightMode == NightThemeMode.SKY_BLUE,
+            badgeColor = Color(0xFF38BDF8),
+            onClick = { onNightModeChange(NightThemeMode.SKY_BLUE) }
         )
 
         Spacer(modifier = Modifier.height(20.dp))
@@ -390,7 +389,7 @@ fun SecurityHubScreen(
                         )
                     )
                     Icon(
-                        imageVector = Icons.Default.WbSunny,
+                        imageVector = Icons.Default.LightMode,
                         contentDescription = null,
                         tint = neonColors.neonAccent,
                         modifier = Modifier.size(20.dp)
@@ -607,7 +606,11 @@ fun NightModeOptionCard(
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
-                        imageVector = if (mode == NightThemeMode.AMBER_NIGHT_FILTER) Icons.Default.Nightlight else Icons.Default.DarkMode,
+                        imageVector = when (mode) {
+                            NightThemeMode.LIGHT -> Icons.Default.LightMode
+                            NightThemeMode.NEON -> Icons.Default.DarkMode
+                            NightThemeMode.SKY_BLUE -> Icons.Default.Nightlight
+                        },
                         contentDescription = null,
                         tint = badgeColor,
                         modifier = Modifier.size(22.dp)

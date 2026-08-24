@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Nightlight
 import androidx.compose.material.icons.filled.Search
@@ -171,7 +172,7 @@ fun MainScreen(
                                                 viewModel.setSearchQuery(query)
                                             }
                                         },
-                                        placeholder = { Text("Rechercher dans NeonCrypt...") },
+                                        placeholder = { Text("Rechercher dans MaelysCryp...") },
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .testTag("search_text_input"),
@@ -186,13 +187,13 @@ fun MainScreen(
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Icon(
                                             imageVector = Icons.Default.Lock,
-                                            contentDescription = "NeonCrypt Logo",
+                                            contentDescription = "MaelysCryp Logo",
                                             tint = neonColors.neonAccent,
                                             modifier = Modifier.size(22.dp)
                                         )
                                         Spacer(modifier = Modifier.width(8.dp))
                                         Text(
-                                            text = "NeonCrypt",
+                                            text = "MaelysCryp",
                                             style = MaterialTheme.typography.titleLarge,
                                             fontWeight = FontWeight.Bold
                                         )
@@ -224,7 +225,7 @@ fun MainScreen(
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Text(
-                                            text = currentUserAccount?.fullName?.take(1) ?: (currentUser?.displayName?.take(1) ?: "K"),
+                                            text = currentUserAccount?.fullName?.take(1) ?: (currentUser?.displayName?.take(1) ?: "M"),
                                             color = neonColors.neonAccent,
                                             fontWeight = FontWeight.Bold,
                                             fontSize = 12.sp
@@ -232,21 +233,29 @@ fun MainScreen(
                                     }
                                 }
 
-                                // Quick night theme toggle
+                                // Quick theme toggle: LIGHT -> NEON -> SKY_BLUE -> LIGHT
                                 IconButton(
                                     onClick = {
                                         val nextMode = when (nightMode) {
-                                            NightThemeMode.OLED_PURE_BLACK -> NightThemeMode.MIDNIGHT_SLATE
-                                            NightThemeMode.MIDNIGHT_SLATE -> NightThemeMode.AMBER_NIGHT_FILTER
-                                            NightThemeMode.AMBER_NIGHT_FILTER -> NightThemeMode.OLED_PURE_BLACK
+                                            NightThemeMode.LIGHT -> NightThemeMode.NEON
+                                            NightThemeMode.NEON -> NightThemeMode.SKY_BLUE
+                                            NightThemeMode.SKY_BLUE -> NightThemeMode.LIGHT
                                         }
                                         viewModel.setNightMode(nextMode)
                                     },
                                     modifier = Modifier.testTag("quick_night_mode_toggle")
                                 ) {
                                     Icon(
-                                        imageVector = if (nightMode == NightThemeMode.AMBER_NIGHT_FILTER) Icons.Default.Nightlight else Icons.Default.DarkMode,
-                                        contentDescription = "Changer mode nuit",
+                                        imageVector = when (nightMode) {
+                                            NightThemeMode.LIGHT -> Icons.Default.LightMode
+                                            NightThemeMode.NEON -> Icons.Default.DarkMode
+                                            NightThemeMode.SKY_BLUE -> Icons.Default.Nightlight
+                                        },
+                                        contentDescription = when (nightMode) {
+                                            NightThemeMode.LIGHT -> "Mode Clair actif"
+                                            NightThemeMode.NEON -> "Mode Néon actif"
+                                            NightThemeMode.SKY_BLUE -> "Mode Bleu Ciel actif"
+                                        },
                                         tint = neonColors.neonAccent
                                     )
                                 }
@@ -464,16 +473,8 @@ fun MainScreen(
             // Admin Console Dialog (Protected with PIN 761278)
             if (showAdminConsoleDialog) {
                 AdminConsoleDialog(
-                    users = registeredUsers,
-                    onDismiss = { viewModel.showAdminConsole(false) },
-                    onToggleUserStatus = { id, active -> viewModel.adminToggleUserStatus(id, active) },
-                    onUpdatePassword = { id, newPass -> viewModel.adminUpdatePassword(id, newPass) },
-                    onUpdateUser = { updatedUser -> viewModel.adminUpdateUser(updatedUser) },
-                    onDeleteUser = { id -> viewModel.adminDeleteUser(id) },
-                    onAddUser = { name, username, whatsapp, pass ->
-                        viewModel.adminAddUser(name, username, whatsapp, pass)
-                    },
-                    onLoginAsUser = { user -> viewModel.loginAsUser(user) }
+                    viewModel = viewModel,
+                    onDismiss = { viewModel.showAdminConsole(false) }
                 )
             }
         }

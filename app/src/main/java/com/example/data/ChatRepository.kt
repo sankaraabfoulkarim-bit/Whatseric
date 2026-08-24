@@ -1,6 +1,8 @@
 package com.example.data
 
 import com.example.crypto.CryptoEngine
+import com.example.data.ai.OpenRouterChatbotManager
+import com.example.data.integration.ThirdPartyBridgeManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -13,6 +15,8 @@ class ChatRepository(
     private val chatDao: ChatDao,
     private val userAccountDao: UserAccountDao? = null,
     val firebaseManager: FirebaseRealtimeManager? = null,
+    val openRouterManager: OpenRouterChatbotManager? = null,
+    val thirdPartyBridgeManager: ThirdPartyBridgeManager? = null,
     private val appScope: CoroutineScope = CoroutineScope(Dispatchers.IO)
 ) {
     val allContacts: Flow<List<ContactEntity>> = chatDao.getAllContacts()
@@ -37,8 +41,32 @@ class ChatRepository(
         val existing = chatDao.getAllContacts().first()
         if (existing.isEmpty()) {
             seedInitialData()
+        } else {
+            ensureAiBotContactExists()
         }
         seedInitialUsers()
+    }
+
+    private suspend fun ensureAiBotContactExists() {
+        val bot = chatDao.getContactByIdSync("bot_openrouter_ai")
+        if (bot == null) {
+            val openRouterBotContact = ContactEntity(
+                id = "bot_openrouter_ai",
+                name = "Neon AI • OpenRouter 🤖",
+                phoneNumber = "Assistant IA (Modèles Gratuits)",
+                avatarColorHex = "#00F2FF",
+                statusMessage = "✨ IA Active • Gemini 2.0 Flash / Llama 3.3 / DeepSeek",
+                isOnline = true,
+                lastSeen = "En ligne • IA OpenRouter",
+                isPinned = true,
+                isVerified = true,
+                safetyNumber = CryptoEngine.generateSafetyNumber("me_user", "bot_openrouter_ai"),
+                publicKeyFingerprint = CryptoEngine.generateShortFingerprint("bot_openrouter_ai"),
+                unreadCount = 0,
+                ephemeralTimerMinutes = 0
+            )
+            chatDao.insertContact(openRouterBotContact)
+        }
     }
 
     private suspend fun seedInitialUsers() {
@@ -212,6 +240,22 @@ class ChatRepository(
     }
 
     private suspend fun seedInitialData() {
+        val openRouterBotContact = ContactEntity(
+            id = "bot_openrouter_ai",
+            name = "Neon AI • OpenRouter 🤖",
+            phoneNumber = "Assistant IA (Modèles Gratuits)",
+            avatarColorHex = "#00F2FF",
+            statusMessage = "✨ IA Active • Gemini 2.0 Flash / Llama 3.3 / DeepSeek",
+            isOnline = true,
+            lastSeen = "En ligne • IA OpenRouter",
+            isPinned = true,
+            isVerified = true,
+            safetyNumber = CryptoEngine.generateSafetyNumber("me_user", "bot_openrouter_ai"),
+            publicKeyFingerprint = CryptoEngine.generateShortFingerprint("bot_openrouter_ai"),
+            unreadCount = 0,
+            ephemeralTimerMinutes = 0
+        )
+
         val contactAlice = ContactEntity(
             id = "alice_sec",
             name = "Alice • Cryptographe",
@@ -292,13 +336,31 @@ class ChatRepository(
             ephemeralTimerMinutes = 0
         )
 
-        chatDao.insertContacts(listOf(contactAlice, contactDevTeam, contactSophie, contactMarc, contactLucas))
+        chatDao.insertContacts(listOf(openRouterBotContact, contactAlice, contactDevTeam, contactSophie, contactMarc, contactLucas))
 
         // Pre-seed encrypted messages
         val now = System.currentTimeMillis()
         val oneHourAgo = now - 3600000
         val twoHoursAgo = now - 7200000
         val yesterday = now - 86400000
+
+        // Bot Welcome Message
+        val keyBot = CryptoEngine.deriveSessionKey("bot_openrouter_ai")
+        val botWelcomeText = "👋 Bonjour ! Je suis Neon AI, propulsé par l'API gratuite OpenRouter. Posez-moi vos questions techniques, demandez des traductions ou du code !"
+        val botEnc = CryptoEngine.encrypt(botWelcomeText, keyBot)
+        val botMsg = MessageEntity(
+            id = UUID.randomUUID().toString(),
+            chatId = "bot_openrouter_ai",
+            senderId = "bot_openrouter_ai",
+            plainText = botWelcomeText,
+            cipherText = botEnc.cipherTextBase64,
+            ivHex = botEnc.ivHex,
+            authTagHex = botEnc.authTagHex,
+            timestamp = now - 60000,
+            status = MessageStatus.READ,
+            messageType = MessageType.TEXT
+        )
+        chatDao.insertMessage(botMsg)
 
         // Alice messages
         val keyAlice = CryptoEngine.deriveSessionKey("alice_sec")
@@ -515,7 +577,7 @@ class ChatRepository(
 
         chatDao.insertMessage(message)
 
-        // Publish to Firebase Cloud Realtime
+        // Publish to Firebase Cloud Realtime if connected
         firebaseManager?.sendRealtimeCloudMessage(
             recipientId = chatId,
             plainText = text,
@@ -531,11 +593,66 @@ class ChatRepository(
             delay(600)
             chatDao.updateMessage(message.copy(status = MessageStatus.READ))
 
-            // Trigger realistic automated encrypted reply from simulated bot contact
-            if (chatId.startsWith("alice") || chatId.startsWith("group") || chatId.startsWith("sophie") || chatId.startsWith("marc")) {
+            // 1. OPENROUTER AI CHATBOT PROCESSING
+            val isAiBotChat = chatId == "bot_openrouter_ai"
+            val isUserConnectedToBot = openRouterManager?.isUserConnectedToBot(chatId) == true
+
+            if (isAiBotChat || isUserConnectedToBot) {
+                processOpenRouterAiResponse(chatId, text)
+            } else if (chatId.startsWith("alice") || chatId.startsWith("group") || chatId.startsWith("sophie") || chatId.startsWith("marc")) {
                 simulateContactResponse(chatId, text)
             }
         }
+    }
+
+    private suspend fun processOpenRouterAiResponse(chatId: String, userText: String) {
+        val manager = openRouterManager ?: return
+        delay(600) // Small natural delay before generating
+
+        // Fetch recent messages for context
+        val recentList = try {
+            val list = chatDao.getMessagesForChat(chatId).first()
+            list.takeLast(6).map { it.senderId to it.plainText }
+        } catch (e: Exception) {
+            emptyList()
+        }
+
+        val aiResult = manager.generateChatbotReply(
+            conversationHistory = recentList,
+            incomingUserMessage = userText
+        )
+
+        val replyText = aiResult.getOrElse { error ->
+            "⚠️ [Neon AI]: ${error.message ?: "Impossible de joindre OpenRouter. Vérifiez la clé API dans la console Admin."}"
+        }
+
+        val sessionKey = CryptoEngine.deriveSessionKey(chatId)
+        val encrypted = CryptoEngine.encrypt(replyText, sessionKey)
+
+        val replyMessage = MessageEntity(
+            id = UUID.randomUUID().toString(),
+            chatId = chatId,
+            senderId = chatId,
+            plainText = replyText,
+            cipherText = encrypted.cipherTextBase64,
+            ivHex = encrypted.ivHex,
+            authTagHex = encrypted.authTagHex,
+            timestamp = System.currentTimeMillis(),
+            status = MessageStatus.READ,
+            messageType = MessageType.TEXT
+        )
+
+        chatDao.insertMessage(replyMessage)
+
+        // Record third-party log for integration monitoring
+        thirdPartyBridgeManager?.recordThirdPartyEvent(
+            toolName = "OpenRouter AI Engine",
+            endpoint = "/api/v1/chat/completions",
+            method = "POST",
+            status = if (aiResult.isSuccess) 200 else 500,
+            snippet = "Prompt: ${userText.take(30)} -> Réponse: ${replyText.take(40)}",
+            isSuccess = aiResult.isSuccess
+        )
     }
 
     private suspend fun simulateContactResponse(chatId: String, userText: String) {
@@ -578,6 +695,54 @@ class ChatRepository(
             else ->
                 "Message déchiffré avec succès 🔒 (AES-256-GCM). Tout est fluide et confidentiel entre nous."
         }
+    }
+
+    // --- THIRD-PARTY TOOL EXTERNAL ACTIONS ---
+    suspend fun executeThirdPartyMessage(
+        apiToken: String,
+        chatId: String,
+        text: String,
+        senderName: String = "External Tool"
+    ): Result<MessageEntity> {
+        val bridge = thirdPartyBridgeManager
+            ?: return Result.failure(Exception("Gestionnaire d'intégration non disponible"))
+
+        val validatedKey = bridge.validateToken(apiToken)
+            ?: return Result.failure(Exception("Clé API invalide ou inactive"))
+
+        if (!validatedKey.scopes.contains("messages:write")) {
+            return Result.failure(Exception("Permissions insuffisantes : le scope 'messages:write' est requis"))
+        }
+
+        val sessionKey = CryptoEngine.deriveSessionKey(chatId)
+        val formattedText = "[$senderName via API]: $text"
+        val encrypted = CryptoEngine.encrypt(formattedText, sessionKey)
+
+        val message = MessageEntity(
+            id = UUID.randomUUID().toString(),
+            chatId = chatId,
+            senderId = chatId,
+            plainText = formattedText,
+            cipherText = encrypted.cipherTextBase64,
+            ivHex = encrypted.ivHex,
+            authTagHex = encrypted.authTagHex,
+            timestamp = System.currentTimeMillis(),
+            status = MessageStatus.READ,
+            messageType = MessageType.TEXT
+        )
+
+        chatDao.insertMessage(message)
+
+        bridge.recordThirdPartyEvent(
+            toolName = validatedKey.name,
+            endpoint = "/api/v1/messages/send",
+            method = "POST",
+            status = 200,
+            snippet = "Message externe injecté vers $chatId: ${text.take(30)}",
+            isSuccess = true
+        )
+
+        return Result.success(message)
     }
 
     suspend fun clearUnread(chatId: String) {

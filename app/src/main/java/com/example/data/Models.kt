@@ -31,9 +31,9 @@ enum class CallDirection {
 }
 
 enum class NightThemeMode {
-    OLED_PURE_BLACK,   // #000000 true black for OLED battery & dark comfort
-    MIDNIGHT_SLATE,    // #0B111A sleek dark navy slate
-    AMBER_NIGHT_FILTER // #130E07 warm amber night reading mode for blue-light reduction
+    LIGHT,       // Mode Clair lumineux
+    NEON,        // Mode Néon sombre vibrant
+    SKY_BLUE     // Mode Bleu Ciel moderne
 }
 
 @Entity(tableName = "contacts")

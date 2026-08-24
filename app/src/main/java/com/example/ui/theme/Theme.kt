@@ -2,6 +2,7 @@ package com.example.ui.theme
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
@@ -19,137 +20,142 @@ data class CustomNeonColors(
     val cardBorder: Color,
     val securityNoticeBg: Color,
     val isAmberWarm: Boolean,
+    val isLightMode: Boolean = false,
     val outgoingText: Color = SleekOutgoingText,
     val outgoingTime: Color = SleekOutgoingTime
 )
 
 val LocalNeonColors = staticCompositionLocalOf {
     CustomNeonColors(
-        neonAccent = SleekNeonCyan,
-        neonSecondary = SleekNeonCyan,
-        neonGlow = SleekNeonCyanGlow,
-        outgoingBubble = SleekOutgoingBubble,
-        incomingBubble = SleekIncomingBubble,
-        chatBackground = SleekBackground,
-        cardBackground = SleekCard,
-        cardBorder = SleekBorder,
+        neonAccent = NeonPrimary,
+        neonSecondary = NeonSecondary,
+        neonGlow = NeonPrimaryGlow,
+        outgoingBubble = NeonOutgoingBubble,
+        incomingBubble = NeonIncomingBubble,
+        chatBackground = NeonBackground,
+        cardBackground = NeonCard,
+        cardBorder = NeonBorder,
         securityNoticeBg = Color(0x801A1C1E),
         isAmberWarm = false,
-        outgoingText = SleekOutgoingText,
-        outgoingTime = SleekOutgoingTime
+        isLightMode = false,
+        outgoingText = NeonOutgoingText,
+        outgoingTime = NeonOutgoingTime
     )
 }
 
 @Composable
-fun NeonCryptTheme(
-    nightMode: NightThemeMode = NightThemeMode.OLED_PURE_BLACK,
+fun MaelysCrypTheme(
+    nightMode: NightThemeMode = NightThemeMode.NEON,
     content: @Composable () -> Unit
 ) {
     val (colorScheme, neonColors) = when (nightMode) {
-        NightThemeMode.OLED_PURE_BLACK -> {
-            val scheme = darkColorScheme(
-                primary = SleekNeonCyan,
-                onPrimary = Color(0xFF09090B),
-                primaryContainer = Color(0xFF003B3E),
-                onPrimaryContainer = SleekNeonCyan,
-                secondary = SleekNeonCyan,
-                onSecondary = Color(0xFF09090B),
-                secondaryContainer = Color(0xFF1A1C1E),
-                onSecondaryContainer = SleekNeonCyan,
-                tertiary = NeonViolet,
-                background = SleekBackground,
-                onBackground = SleekTextPrimary,
-                surface = SleekSurface,
-                onSurface = SleekTextWhite,
-                surfaceVariant = SleekSurfaceVariant,
-                onSurfaceVariant = SleekTextSecondary,
-                outline = SleekBorder
+        NightThemeMode.LIGHT -> {
+            val scheme = lightColorScheme(
+                primary = LightPrimary,
+                onPrimary = Color.White,
+                primaryContainer = LightPrimaryContainer,
+                onPrimaryContainer = LightPrimary,
+                secondary = LightPrimary,
+                onSecondary = Color.White,
+                secondaryContainer = Color(0xFFE2E8F0),
+                onSecondaryContainer = LightPrimary,
+                tertiary = Color(0xFF0284C7),
+                background = LightBackground,
+                onBackground = LightTextPrimary,
+                surface = LightSurface,
+                onSurface = LightTextPrimary,
+                surfaceVariant = LightSurfaceVariant,
+                onSurfaceVariant = LightTextSecondary,
+                outline = LightBorder
             )
             val custom = CustomNeonColors(
-                neonAccent = SleekNeonCyan,
-                neonSecondary = SleekNeonCyan,
-                neonGlow = SleekNeonCyanGlow,
-                outgoingBubble = SleekOutgoingBubble,
-                incomingBubble = SleekIncomingBubble,
-                chatBackground = SleekBackground,
-                cardBackground = SleekCard,
-                cardBorder = SleekBorder,
-                securityNoticeBg = Color(0x801A1C1E),
+                neonAccent = LightPrimary,
+                neonSecondary = Color(0xFF0EA5E9),
+                neonGlow = Color(0x330284C7),
+                outgoingBubble = LightOutgoingBubble,
+                incomingBubble = LightIncomingBubble,
+                chatBackground = LightBackground,
+                cardBackground = LightCard,
+                cardBorder = LightBorder,
+                securityNoticeBg = Color(0xFFE0F2FE),
                 isAmberWarm = false,
-                outgoingText = SleekOutgoingText,
-                outgoingTime = SleekOutgoingTime
+                isLightMode = true,
+                outgoingText = LightOutgoingText,
+                outgoingTime = LightOutgoingTime
             )
             Pair(scheme, custom)
         }
 
-        NightThemeMode.MIDNIGHT_SLATE -> {
+        NightThemeMode.NEON -> {
             val scheme = darkColorScheme(
-                primary = SleekNeonCyan,
+                primary = NeonPrimary,
                 onPrimary = Color(0xFF09090B),
                 primaryContainer = Color(0xFF003B3E),
-                onPrimaryContainer = SleekNeonCyan,
-                secondary = SleekNeonCyan,
+                onPrimaryContainer = NeonPrimary,
+                secondary = NeonSecondary,
                 onSecondary = Color(0xFF09090B),
                 secondaryContainer = Color(0xFF1A1C1E),
-                onSecondaryContainer = SleekNeonCyan,
+                onSecondaryContainer = NeonPrimary,
                 tertiary = NeonViolet,
-                background = SlateBackground,
-                onBackground = SleekTextPrimary,
-                surface = SleekSurface,
-                onSurface = SleekTextWhite,
-                surfaceVariant = SleekSurfaceVariant,
-                onSurfaceVariant = SleekTextSecondary,
-                outline = SleekBorder
+                background = NeonBackground,
+                onBackground = NeonTextPrimary,
+                surface = NeonSurface,
+                onSurface = Color.White,
+                surfaceVariant = NeonSurfaceVariant,
+                onSurfaceVariant = NeonTextSecondary,
+                outline = NeonBorder
             )
             val custom = CustomNeonColors(
-                neonAccent = SleekNeonCyan,
-                neonSecondary = SleekNeonCyan,
-                neonGlow = SleekNeonCyanGlow,
-                outgoingBubble = SleekOutgoingBubble,
-                incomingBubble = SleekIncomingBubble,
-                chatBackground = SlateBackground,
-                cardBackground = SleekCard,
-                cardBorder = SleekBorder,
+                neonAccent = NeonPrimary,
+                neonSecondary = NeonSecondary,
+                neonGlow = NeonPrimaryGlow,
+                outgoingBubble = NeonOutgoingBubble,
+                incomingBubble = NeonIncomingBubble,
+                chatBackground = NeonBackground,
+                cardBackground = NeonCard,
+                cardBorder = NeonBorder,
                 securityNoticeBg = Color(0x801A1C1E),
                 isAmberWarm = false,
-                outgoingText = SleekOutgoingText,
-                outgoingTime = SleekOutgoingTime
+                isLightMode = false,
+                outgoingText = NeonOutgoingText,
+                outgoingTime = NeonOutgoingTime
             )
             Pair(scheme, custom)
         }
 
-        NightThemeMode.AMBER_NIGHT_FILTER -> {
+        NightThemeMode.SKY_BLUE -> {
             val scheme = darkColorScheme(
-                primary = AmberPrimary,
-                onPrimary = Color(0xFF3E2200),
-                primaryContainer = Color(0xFF5A3300),
-                onPrimaryContainer = Color(0xFFFFD180),
-                secondary = AmberSecondary,
-                onSecondary = Color(0xFF381507),
-                secondaryContainer = Color(0xFF54220E),
-                onSecondaryContainer = Color(0xFFFFAB91),
-                tertiary = Color(0xFFFFD54F),
-                background = AmberBackground,
-                onBackground = Color(0xFFFFEEDB),
-                surface = AmberSurface,
-                onSurface = Color(0xFFFFEEDB),
-                surfaceVariant = AmberSurfaceVariant,
-                onSurfaceVariant = Color(0xFFD7CCC8),
-                outline = AmberBorder
+                primary = SkyBluePrimary,
+                onPrimary = Color(0xFF082F49),
+                primaryContainer = Color(0xFF0C4A6E),
+                onPrimaryContainer = SkyBluePrimary,
+                secondary = SkyBlueSecondary,
+                onSecondary = Color(0xFF082F49),
+                secondaryContainer = Color(0xFF1E293B),
+                onSecondaryContainer = SkyBlueSecondary,
+                tertiary = Color(0xFF38BDF8),
+                background = SkyBlueBackground,
+                onBackground = SkyBlueTextPrimary,
+                surface = SkyBlueSurface,
+                onSurface = Color.White,
+                surfaceVariant = SkyBlueSurfaceVariant,
+                onSurfaceVariant = SkyBlueTextSecondary,
+                outline = SkyBlueBorder
             )
             val custom = CustomNeonColors(
-                neonAccent = AmberPrimary,
-                neonSecondary = AmberSecondary,
-                neonGlow = Color(0x33FFA726),
-                outgoingBubble = Color(0xFF42280E),
-                incomingBubble = Color(0xFF1C1610),
-                chatBackground = AmberBackground,
-                cardBackground = AmberCard,
-                cardBorder = AmberBorder,
-                securityNoticeBg = Color(0xFF2E1C0A),
-                isAmberWarm = true,
-                outgoingText = Color(0xFFFFEEDB),
-                outgoingTime = AmberSecondary
+                neonAccent = SkyBluePrimary,
+                neonSecondary = SkyBlueSecondary,
+                neonGlow = SkyBluePrimaryGlow,
+                outgoingBubble = SkyBlueOutgoingBubble,
+                incomingBubble = SkyBlueIncomingBubble,
+                chatBackground = SkyBlueBackground,
+                cardBackground = SkyBlueCard,
+                cardBorder = SkyBlueBorder,
+                securityNoticeBg = Color(0xFF0F263E),
+                isAmberWarm = false,
+                isLightMode = false,
+                outgoingText = SkyBlueOutgoingText,
+                outgoingTime = SkyBlueOutgoingTime
             )
             Pair(scheme, custom)
         }
@@ -163,4 +169,14 @@ fun NeonCryptTheme(
         )
     }
 }
+
+// Backward-compatibility alias
+@Composable
+fun NeonCryptTheme(
+    nightMode: NightThemeMode = NightThemeMode.NEON,
+    content: @Composable () -> Unit
+) {
+    MaelysCrypTheme(nightMode = nightMode, content = content)
+}
+
 
